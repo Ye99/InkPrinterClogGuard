@@ -1,11 +1,16 @@
-  [Unit]
-  Description=Runs print_test_page.service every Friday at 12 PM
+[Unit]
+Description=Runs print_test_page.service on a schedule to prevent ink from drying out
+Documentation=https://www.freedesktop.org/software/systemd/man/systemd.timer.html
 
-  [Timer]
-  OnCalendar=Fri 12:00:00
-  Persistent=true
-  Unit=print_test_page.service
+[Timer]
+OnCalendar=Fri 12:00:00
+# Ensures missed executions run immediately on startup
+Persistent=true
+# Improves timer accuracy
+AccuracySec=1min
+Unit=print_test_page.service
+WakeSystem=true
 
-  [Install]
-  WantedBy=timers.target
+[Install]
+WantedBy=timers.target
 
