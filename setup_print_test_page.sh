@@ -37,6 +37,11 @@ print_usage() {
 
 # Cleanup function
 cleanup() {
+    # Always clean up the temporary file if it exists
+    if [ -n "$TMP_SERVICE_FILE" ] && [ -f "$TMP_SERVICE_FILE" ]; then
+        rm -f "$TMP_SERVICE_FILE"
+    fi
+    
     if [ "$1" -ne 0 ] && [ "$INSTALLED_NEW_FILES" = "true" ]; then
         print_info "Cleaning up due to error..."
         rm -f /etc/systemd/system/print_test_page.service
@@ -114,6 +119,15 @@ if [ ! -f "print_test_page.timer" ]; then
     print_error "print_test_page.timer file not found in current directory."
 fi
 
+# Get the current directory and use it to set the script path
+CURRENT_DIR=$(pwd)
+SCRIPT_PATH="$CURRENT_DIR/self_contained_print_test_page.sh"
+print_info "Using script path: $SCRIPT_PATH"
+
+# Create a temporary service file with the updated path
+TMP_SERVICE_FILE=$(mktemp)
+sed "s|ExecStart=.*|ExecStart=$SCRIPT_PATH|g" print_test_page.service > "$TMP_SERVICE_FILE"
+
 # Check if files already exist in system directory
 if [ -f "/etc/systemd/system/print_test_page.service" ] || [ -f "/etc/systemd/system/print_test_page.timer" ]; then
     if [ "$FORCE" = "true" ]; then
@@ -125,9 +139,12 @@ fi
 
 # Copy files to systemd directory
 print_info "Copying service and timer files to /etc/systemd/system/..."
-cp print_test_page.service /etc/systemd/system/ || print_error "Failed to copy service file."
+cp "$TMP_SERVICE_FILE" /etc/systemd/system/print_test_page.service || print_error "Failed to copy service file."
 cp print_test_page.timer /etc/systemd/system/ || print_error "Failed to copy timer file."
 INSTALLED_NEW_FILES=true
+
+# Remove temporary file
+rm -f "$TMP_SERVICE_FILE"
 
 # Set appropriate permissions
 chmod 644 /etc/systemd/system/print_test_page.service || print_error "Failed to set permissions on service file."
@@ -150,13 +167,13 @@ print_success "Timer started."
 
 # List only the print_test_page timer for verification
 print_info "Listing print_test_page timer for verification:"
-systemctl list-timers print_test_page.timer
+systemctl list-timers print_test_page.timer | grep -v "Pass --all"
 
 # Show timer information
 print_info "Timer schedule information:"
 systemctl cat print_test_page.timer | grep -E 'OnCalendar|OnBootSec|OnUnitActiveSec' | sed 's/^[[:space:]]*/    /'
 
-print_success "Setup completed successfully! The print test page timer is now active."
+print_success "Setup completed successfully! We will print a test page at the scheduled time."
 
 # Clean exit (disables the trap)
 trap - EXIT
