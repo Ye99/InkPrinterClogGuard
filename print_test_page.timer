@@ -9,7 +9,8 @@ Persistent=true
 # Improves timer accuracy
 AccuracySec=1min
 Unit=print_test_page.service
-WakeSystem=true
+# Ensures compatibility with LXC containers that have restricted access to realtime clock
+TimersMonotonic=yes
 
 [Install]
 WantedBy=timers.target
