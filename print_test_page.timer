@@ -1,0 +1,11 @@
+  [Unit]
+  Description=Runs print_test_page.service every Friday at 12 PM
+
+  [Timer]
+  OnCalendar=Fri 12:00:00
+  Persistent=true
+  Unit=print_test_page.service
+
+  [Install]
+  WantedBy=timers.target
+

@@ -1,0 +1,6 @@
+  [Unit]
+  Description=Print Test Page Service
+
+  [Service]
+  ExecStart=/root/p/configs/self_contained_print_test_page.sh
+
