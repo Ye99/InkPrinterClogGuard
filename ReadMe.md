@@ -26,3 +26,11 @@ Run the setup script with the `--help` flag:
    ```
    ./setup_print_test_page.sh --help
    ```
+
+## Author
+
+[Ye](https://github.com/Ye99)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
