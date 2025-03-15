@@ -76,16 +76,20 @@ configure_timezone() {
     if [ "$current_tz" = "UTC" ] || [ "$current_tz" = "Etc/UTC" ]; then
         print_info "System is using UTC. Attempting to detect local timezone..."
         
-        # Try to detect local timezone
-        if [ -f /etc/timezone ]; then
-            # Debian/Ubuntu style
-            local_tz=$(cat /etc/timezone)
-        elif [ -f /etc/localtime ] && command -v timedatectl &>/dev/null; then
-            # Try using timedatectl
-            local_tz=$(timedatectl show --property=Timezone --value 2>/dev/null)
+        # Ensure curl is installed
+        if ! command -v curl &> /dev/null; then
+            print_info "curl not found, installing..."
+            if ! run_as_root apt install -y curl; then
+                print_info "Failed to install curl. Keeping UTC timezone."
+                return 0
+            fi
         fi
         
-        # If we couldn't detect it, keep UTC
+        # Use IP-based geolocation to determine timezone
+        print_info "Detecting timezone based on IP address..."
+        local_tz=$(curl -s http://ip-api.com/line?fields=timezone 2>/dev/null)
+        
+        # Check if detection was successful
         if [ -z "$local_tz" ] || [ "$local_tz" = "UTC" ] || [ "$local_tz" = "Etc/UTC" ]; then
             print_info "Could not detect a non-UTC local timezone. Keeping UTC as the system timezone."
             return 0
@@ -97,14 +101,8 @@ configure_timezone() {
         if command -v timedatectl &>/dev/null; then
             # Modern systemd method
             if ! run_as_root timedatectl set-timezone "$local_tz"; then
-                print_info "Failed to set timezone with timedatectl. Falling back to manual method."
-                if [ -f "/usr/share/zoneinfo/$local_tz" ]; then
-                    run_as_root ln -sf "/usr/share/zoneinfo/$local_tz" /etc/localtime
-                    echo "$local_tz" | run_as_root tee /etc/timezone >/dev/null
-                else
-                    print_info "Timezone file for $local_tz not found. Keeping UTC timezone."
-                    return 0
-                fi
+                print_info "Failed to set timezone. Keeping UTC timezone."
+                return 0
             fi
         else
             # Fallback for non-systemd systems
