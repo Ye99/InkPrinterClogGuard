@@ -81,9 +81,10 @@ done
 
 chmod +x "$SCRIPT_DIR/$PRINT_SCRIPT"
 
-# Copy service and timer files to systemd directory
+# Copy and modify service and timer files to systemd directory
 echo "Installing $SERVICE_NAME service and timer files..."
-cp "$SCRIPT_DIR/$SERVICE_NAME.service" /etc/systemd/system/
+# Create temp service file with correct path
+sed "s|ExecStart=.*|ExecStart=/bin/bash $SCRIPT_DIR/$PRINT_SCRIPT|" "$SCRIPT_DIR/$SERVICE_NAME.service" > "/etc/systemd/system/$SERVICE_NAME.service"
 cp "$SCRIPT_DIR/$SERVICE_NAME.timer" /etc/systemd/system/
 
 # Reload systemd to recognize new files
