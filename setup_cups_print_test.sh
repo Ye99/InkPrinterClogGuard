@@ -81,10 +81,21 @@ done
 
 chmod +x "$SCRIPT_DIR/$PRINT_SCRIPT"
 
-# Copy and modify service and timer files to systemd directory
+# Install service and timer files to systemd directory
 echo "Installing $SERVICE_NAME service and timer files..."
-# Create temp service file with correct path
-sed "s|ExecStart=.*|ExecStart=/bin/bash $SCRIPT_DIR/$PRINT_SCRIPT|" "$SCRIPT_DIR/$SERVICE_NAME.service" > "/etc/systemd/system/$SERVICE_NAME.service"
+
+# Read the service file, update the path, and write to systemd directory
+SERVICE_FILE="$SCRIPT_DIR/$SERVICE_NAME.service"
+if [ -f "$SERVICE_FILE" ]; then
+  # Update the ExecStart path in the service file
+  sed "s|ExecStart=.*|ExecStart=/bin/bash $SCRIPT_DIR/$PRINT_SCRIPT|g" "$SERVICE_FILE" > "/etc/systemd/system/$SERVICE_NAME.service"
+  echo "Service file installed with script path: $SCRIPT_DIR/$PRINT_SCRIPT"
+else
+  echo "Error: Service file not found at $SERVICE_FILE"
+  exit 1
+fi
+
+# Copy the timer file
 cp "$SCRIPT_DIR/$SERVICE_NAME.timer" /etc/systemd/system/
 
 # Reload systemd to recognize new files
