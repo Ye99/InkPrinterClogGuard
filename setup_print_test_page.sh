@@ -67,6 +67,62 @@ install_ipptool() {
     fi
 }
 
+# Function to configure system timezone
+configure_timezone() {
+    print_info "Checking system timezone configuration..."
+    
+    # Check current timezone
+    current_tz=$(readlink -f /etc/localtime | sed 's|/usr/share/zoneinfo/||')
+    if [ "$current_tz" = "UTC" ] || [ "$current_tz" = "Etc/UTC" ]; then
+        print_info "System is using UTC. Attempting to detect local timezone..."
+        
+        # Try to detect local timezone
+        if [ -f /etc/timezone ]; then
+            # Debian/Ubuntu style
+            local_tz=$(cat /etc/timezone)
+        elif [ -f /etc/localtime ] && command -v timedatectl &>/dev/null; then
+            # Try using timedatectl
+            local_tz=$(timedatectl show --property=Timezone --value 2>/dev/null)
+        fi
+        
+        # If we couldn't detect it, keep UTC
+        if [ -z "$local_tz" ] || [ "$local_tz" = "UTC" ] || [ "$local_tz" = "Etc/UTC" ]; then
+            print_info "Could not detect a non-UTC local timezone. Keeping UTC as the system timezone."
+            return 0
+        fi
+        
+        # Set the timezone
+        print_info "Setting timezone to: $local_tz"
+        
+        if command -v timedatectl &>/dev/null; then
+            # Modern systemd method
+            if ! run_as_root timedatectl set-timezone "$local_tz"; then
+                print_info "Failed to set timezone with timedatectl. Falling back to manual method."
+                if [ -f "/usr/share/zoneinfo/$local_tz" ]; then
+                    run_as_root ln -sf "/usr/share/zoneinfo/$local_tz" /etc/localtime
+                    echo "$local_tz" | run_as_root tee /etc/timezone >/dev/null
+                else
+                    print_info "Timezone file for $local_tz not found. Keeping UTC timezone."
+                    return 0
+                fi
+            fi
+        else
+            # Fallback for non-systemd systems
+            if [ -f "/usr/share/zoneinfo/$local_tz" ]; then
+                run_as_root ln -sf "/usr/share/zoneinfo/$local_tz" /etc/localtime
+                echo "$local_tz" | run_as_root tee /etc/timezone >/dev/null
+            else
+                print_info "Timezone file for $local_tz not found. Keeping UTC timezone."
+                return 0
+            fi
+        fi
+        
+        print_success "Timezone configured to: $local_tz"
+    else
+        print_info "System already using local timezone: $current_tz. No changes needed."
+    fi
+}
+
 # Cleanup function
 cleanup() {
     # Always clean up the temporary file if it exists
@@ -128,6 +184,9 @@ update_packages
 
 # Install ipptool if needed
 install_ipptool
+
+# Configure timezone to local time
+configure_timezone
 
 # Uninstall if requested
 if [ "$UNINSTALL" = "true" ]; then
