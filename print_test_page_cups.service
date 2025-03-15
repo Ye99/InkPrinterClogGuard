@@ -1,0 +1,12 @@
+[Unit]
+Description=Print Test Page using CUPS
+
+[Service]
+Type=oneshot
+# the path will be updated by setup script. Don't worry if it doesn't match your git clone local path. 
+ExecStart=/bin/bash /home/ye/p/InkPrinterClogGuard/print_test_page_cups.sh
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target 

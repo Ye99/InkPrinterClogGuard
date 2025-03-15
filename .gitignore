@@ -1,0 +1,15 @@
+# Ignore generated print test script
+print_test_page_cups.sh
+
+# General system files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log 

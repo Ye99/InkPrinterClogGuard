@@ -1,0 +1,14 @@
+[Unit]
+Description=Run Print Test Page using CUPS every Friday at noon
+Documentation=https://www.freedesktop.org/software/systemd/man/systemd.timer.html
+
+[Timer]
+OnCalendar=Mon 12:00
+Persistent=true
+# Specify accuracy of timer
+AccuracySec=1min
+# Compatible with systems using dynamic users
+DynamicUser=yes
+
+[Install]
+WantedBy=timers.target 

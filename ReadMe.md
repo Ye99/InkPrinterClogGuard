@@ -4,20 +4,19 @@ Automatically prints a test page at scheduled intervals using systemd timers, to
 
 Tested on Epson EcoTank ET-2850, should work for ET-3850, ET-4850 color inkjet printers as well. 
 
-The default schedule is set to print a test page every 3 days. To change the scheduled interval, edit the `print_test_page.timer` file, then rerun the setup script with the `--force` flag to overwrite the existing systemd timer. 
-
-Note: I run this service on a virtualized Linux container 24/7, so I use the following systemd timer settings. The OnBootSec=1min setting prints a test page 1 minute after reboot, which is required to kick off the first run on a new container.
+The default schedule is set to print a test page every Friday at noon. To change the scheduled interval, edit the `print_test_page.timer` file. For example, instead of
 ```
-# This ensures the first run happens right away on boot, and then every 3 days after that.
-OnBootSec=1min
-# Run every 3 days
-OnUnitActiveSec=3d
+OnCalendar=Fri 12:00
+Persistent=true
 ```
-However, if you run this service on a computer that you power off and on frequently, the above settings will cause unnecessary extra executions. Instead, use the following settings:
+this setting prints a test page on Monday and Friday at noon:
 ```
 OnCalendar=Mon,Fri 12:00
 Persistent=true
 ```
+After making your changes, rerun the setup script with the --force flag to overwrite the existing systemd timer.
+
+Note: I run this service on a virtualized Linux container 24/7. If you run this service on a computer that is powered off for extended periods, your inkjet printer may still get clogged because the service is not running.
 
 ## Installation
 
