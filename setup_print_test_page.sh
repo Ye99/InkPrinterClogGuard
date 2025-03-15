@@ -7,6 +7,41 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Function to update package repositories
+update_packages() {
+    print_info "Updating package lists..."
+    if [ "$(id -u)" -eq 0 ]; then
+        if ! apt update &>/dev/null; then
+            print_error "Failed to update package lists. Check your internet connection."
+        fi
+    else
+        if ! sudo apt update &>/dev/null; then
+            print_error "Failed to update package lists. Check your internet connection."
+        fi
+    fi
+    print_success "Package lists updated successfully."
+}
+
+# Function to install ipptool if not already installed
+install_ipptool() {
+    print_info "Checking if ipptool is installed..."
+    if ! command -v ipptool &> /dev/null; then
+        print_info "ipptool not found. Installing cups-ipptool..."
+        if [ "$(id -u)" -eq 0 ]; then
+            if ! apt install -y cups-ipptool; then
+                print_error "Failed to install cups-ipptool. Please install it manually."
+            fi
+        else
+            if ! sudo apt install -y cups-ipptool; then
+                print_error "Failed to install cups-ipptool. Please install it manually."
+            fi
+        fi
+        print_success "Successfully installed cups-ipptool"
+    else
+        print_info "ipptool is already installed."
+    fi
+}
+
 # Function to print success messages
 print_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
@@ -90,6 +125,12 @@ fi
 if [ "$EUID" -ne 0 ]; then
     print_error "This script must be run as root. Try using sudo."
 fi
+
+# Update package lists before anything else
+update_packages
+
+# Install ipptool if needed
+install_ipptool
 
 # Uninstall if requested
 if [ "$UNINSTALL" = "true" ]; then

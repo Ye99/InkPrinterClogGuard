@@ -1,7 +1,11 @@
 #!/bin/bash
 # This prints test page same as Epson built-in test page, with latest statics. 
 # Run this script from any Linux, and the Linux host doesn't need the printer configured in CUPS 
-# This script depends on ipptool, if not already installed, install it: sudo apt install cups-ipptool
+# Check if ipptool is installed
+if ! command -v ipptool &> /dev/null; then
+    echo "ERROR: ipptool is required but not installed. Please run the setup script first."
+    exit 1
+fi
 PRINTERIP=10.0.1.16
 
 #--- extract embedded spool files
