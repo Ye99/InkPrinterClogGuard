@@ -3,7 +3,8 @@ Description=Runs print_test_page.service on a schedule to prevent ink from dryin
 Documentation=https://www.freedesktop.org/software/systemd/man/systemd.timer.html
 
 [Timer]
-OnCalendar=Fri 12:00:00
+# Run every 3 days
+OnUnitActiveSec=3d
 # Ensures missed executions run immediately on startup
 Persistent=true
 # Improves timer accuracy

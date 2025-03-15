@@ -4,7 +4,7 @@ Automatically prints a test page at scheduled intervals using systemd timers, to
 
 Tested on Epson EcoTank ET-2850, should work for ET-3850, ET-4850 color inkjet printers as well. 
 
-The default schedule is set to print a test page every Friday at noon. To change the scheduled interval or when the test page is printed, edit the `print_test_page.timer` file, then rerun the setup script with the `--force` flag to overwrite the existing systemd timer. 
+The default schedule is set to print a test page every 3 days. To change the scheduled interval or when the test page is printed, edit the `print_test_page.timer` file, then rerun the setup script with the `--force` flag to overwrite the existing systemd timer. 
 
 ## Installation
 
