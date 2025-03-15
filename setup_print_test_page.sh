@@ -32,7 +32,24 @@ print_usage() {
     echo "  -h, --help      Show this help message"
     echo "  -u, --uninstall Remove the service and timer"
     echo "  -f, --force     Force installation even if files already exist"
+    echo "  -p, --printer-ip IP  Set the printer IP address (e.g. 10.0.1.16)"
     echo ""
+}
+
+# Function to validate IP address format
+validate_ip() {
+    local ip=$1
+    local stat=1
+
+    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        OIFS=$IFS
+        IFS='.'
+        ip=($ip)
+        IFS=$OIFS
+        [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+        stat=$?
+    fi
+    return $stat
 }
 
 # Helper function to run commands as root
@@ -121,6 +138,35 @@ configure_timezone() {
     fi
 }
 
+# Function to update printer IP in the print test script
+update_printer_ip() {
+    local printer_ip=$1
+    local script_path="$CURRENT_DIR/self_contained_print_test_page.sh"
+    
+    print_info "Updating printer IP address to: $printer_ip"
+    
+    # Check if script exists
+    if [ ! -f "$script_path" ]; then
+        print_error "self_contained_print_test_page.sh not found in current directory."
+    fi
+    
+    # Create a temporary file with the updated IP
+    local temp_file=$(mktemp)
+    sed "s/^PRINTERIP=.*/PRINTERIP=$printer_ip/" "$script_path" > "$temp_file"
+    
+    # Check if the substitution was successful
+    if grep -q "PRINTERIP=$printer_ip" "$temp_file"; then
+        # Make the file executable
+        chmod +x "$temp_file"
+        # Replace the original file
+        mv "$temp_file" "$script_path"
+        print_success "Printer IP address updated successfully."
+    else
+        rm -f "$temp_file"
+        print_error "Failed to update printer IP address in script."
+    fi
+}
+
 # Cleanup function
 cleanup() {
     # Always clean up the temporary file if it exists
@@ -140,6 +186,7 @@ cleanup() {
 UNINSTALL=false
 FORCE=false
 INSTALLED_NEW_FILES=false
+PRINTER_IP=""
 
 # Parse command line arguments
 while [ "$#" -gt 0 ]; do
@@ -156,6 +203,16 @@ while [ "$#" -gt 0 ]; do
             FORCE=true
             shift
             ;;
+        -p|--printer-ip)
+            if [ -z "$2" ] || [[ "$2" == -* ]]; then
+                print_error "Printer IP address is required after -p or --printer-ip option."
+            fi
+            PRINTER_IP="$2"
+            if ! validate_ip "$PRINTER_IP"; then
+                print_error "Invalid IP address format: $PRINTER_IP"
+            fi
+            shift 2
+            ;;
         *)
             print_error "Unknown option: $1"
             print_usage
@@ -167,6 +224,11 @@ done
 # Set up trap for cleanup on error
 trap 'cleanup $?' EXIT
 
+# Printer IP is required unless uninstalling
+if [ "$UNINSTALL" != "true" ] && [ -z "$PRINTER_IP" ]; then
+    print_error "Printer IP address is required. Use --printer-ip option. For example: sudo ./setup_print_test_page.sh --printer-ip 10.0.1.16"
+fi
+
 # Check if systemd is available
 if ! command -v systemctl &> /dev/null; then
     print_error "systemd is not available on this system."
@@ -177,16 +239,7 @@ if [ "$EUID" -ne 0 ]; then
     print_error "This script must be run as root. Try using sudo."
 fi
 
-# Update package lists before anything else
-update_packages
-
-# Install ipptool if needed
-install_ipptool
-
-# Configure timezone to local time
-configure_timezone
-
-# Uninstall if requested
+# Uninstall if requested - moved this block earlier to avoid unnecessary operations
 if [ "$UNINSTALL" = "true" ]; then
     print_info "Stopping print_test_page timer..."
     systemctl stop print_test_page.timer 2>/dev/null || true
@@ -205,6 +258,23 @@ if [ "$UNINSTALL" = "true" ]; then
     exit 0
 fi
 
+# The following operations are only needed for installation, not uninstallation
+
+# Update package lists before anything else
+update_packages
+
+# Install ipptool if needed
+install_ipptool
+
+# Configure timezone to local time
+configure_timezone
+
+# Get the current directory for script paths
+CURRENT_DIR=$(pwd)
+
+# Update printer IP (will always be set for installation)
+update_printer_ip "$PRINTER_IP"
+
 # Check if service and timer files exist in current directory
 if [ ! -f "print_test_page.service" ]; then
     print_error "print_test_page.service file not found in current directory."
@@ -215,7 +285,6 @@ if [ ! -f "print_test_page.timer" ]; then
 fi
 
 # Get the current directory and use it to set the script path
-CURRENT_DIR=$(pwd)
 SCRIPT_PATH="$CURRENT_DIR/self_contained_print_test_page.sh"
 print_info "Using script path: $SCRIPT_PATH"
 

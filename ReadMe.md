@@ -8,9 +8,18 @@ The default schedule is set to print a test page every Friday at noon. To change
 
 ## Installation
 
-Run the setup script with root privileges:
+Run the setup script with root privileges, specifying your printer's IP address:
    ```
-   sudo ./setup_print_test_page.sh
+   sudo ./setup_print_test_page.sh --printer-ip 10.0.1.16
+   ```
+
+The printer IP address parameter is mandatory and must be specified during installation.
+
+## Changing Printer IP Address
+
+If your printer's IP address changes, for instance changed from 10.0.1.16 to 10.0.1.17, update it by running:
+   ```
+   sudo ./setup_print_test_page.sh --printer-ip 10.0.1.17 --force
    ```
 
 ## Uninstallation
