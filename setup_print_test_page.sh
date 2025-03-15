@@ -7,41 +7,6 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to update package repositories
-update_packages() {
-    print_info "Updating package lists..."
-    if [ "$(id -u)" -eq 0 ]; then
-        if ! apt update &>/dev/null; then
-            print_error "Failed to update package lists. Check your internet connection."
-        fi
-    else
-        if ! sudo apt update &>/dev/null; then
-            print_error "Failed to update package lists. Check your internet connection."
-        fi
-    fi
-    print_success "Package lists updated successfully."
-}
-
-# Function to install ipptool if not already installed
-install_ipptool() {
-    print_info "Checking if ipptool is installed..."
-    if ! command -v ipptool &> /dev/null; then
-        print_info "ipptool not found. Installing cups-ipp-utils..."
-        if [ "$(id -u)" -eq 0 ]; then
-            if ! apt install -y cups-ipp-utils; then
-                print_error "Failed to install cups-ipp-utils. Please install it manually."
-            fi
-        else
-            if ! sudo apt install -y cups-ipp-utils; then
-                print_error "Failed to install cups-ipp-utils. Please install it manually."
-            fi
-        fi
-        print_success "Successfully installed cups-ipp-utils"
-    else
-        print_info "ipptool is already installed."
-    fi
-}
-
 # Function to print success messages
 print_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
@@ -68,6 +33,38 @@ print_usage() {
     echo "  -u, --uninstall Remove the service and timer"
     echo "  -f, --force     Force installation even if files already exist"
     echo ""
+}
+
+# Helper function to run commands as root
+run_as_root() {
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
+# Function to update package repositories
+update_packages() {
+    print_info "Updating package lists..."
+    if ! run_as_root apt update &>/dev/null; then
+        print_error "Failed to update package lists. Check your internet connection."
+    fi
+    print_success "Package lists updated successfully."
+}
+
+# Function to install ipptool if not already installed
+install_ipptool() {
+    print_info "Checking if ipptool is installed..."
+    if ! command -v ipptool &> /dev/null; then
+        print_info "ipptool not found. Installing cups-ipp-utils..."
+        if ! run_as_root apt install -y cups-ipp-utils; then
+            print_error "Failed to install cups-ipp-utils. Please install it manually."
+        fi
+        print_success "Successfully installed cups-ipp-utils"
+    else
+        print_info "ipptool is already installed."
+    fi
 }
 
 # Cleanup function
