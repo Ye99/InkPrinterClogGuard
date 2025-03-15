@@ -26,17 +26,17 @@ update_packages() {
 install_ipptool() {
     print_info "Checking if ipptool is installed..."
     if ! command -v ipptool &> /dev/null; then
-        print_info "ipptool not found. Installing cups-ipptool..."
+        print_info "ipptool not found. Installing cups-ipp-utils..."
         if [ "$(id -u)" -eq 0 ]; then
-            if ! apt install -y cups-ipptool; then
-                print_error "Failed to install cups-ipptool. Please install it manually."
+            if ! apt install -y cups-ipp-utils; then
+                print_error "Failed to install cups-ipp-utils. Please install it manually."
             fi
         else
-            if ! sudo apt install -y cups-ipptool; then
-                print_error "Failed to install cups-ipptool. Please install it manually."
+            if ! sudo apt install -y cups-ipp-utils; then
+                print_error "Failed to install cups-ipp-utils. Please install it manually."
             fi
         fi
-        print_success "Successfully installed cups-ipptool"
+        print_success "Successfully installed cups-ipp-utils"
     else
         print_info "ipptool is already installed."
     fi
