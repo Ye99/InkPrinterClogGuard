@@ -6,6 +6,19 @@ Tested on Epson EcoTank ET-2850, should work for ET-3850, ET-4850 color inkjet p
 
 The default schedule is set to print a test page every 3 days. To change the scheduled interval, edit the `print_test_page.timer` file, then rerun the setup script with the `--force` flag to overwrite the existing systemd timer. 
 
+Note: I run this service on a virtualized Linux container 24/7, so I use the following systemd timer settings. The OnBootSec=1min setting prints a test page 1 minute after reboot, which is required to kick off the first run on a new container.
+```
+# This ensures the first run happens right away on boot, and then every 3 days after that.
+OnBootSec=1min
+# Run every 3 days
+OnUnitActiveSec=3d
+```
+However, if you run this service on a computer that you power off and on frequently, the above settings will cause unnecessary extra executions. Instead, use the following settings:
+```
+OnCalendar=Mon,Fri 12:00
+Persistent=true
+```
+
 ## Installation
 
 Run the setup script with root privileges, specifying your printer's IP address:
