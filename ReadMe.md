@@ -4,21 +4,6 @@ Automatically prints test pages at scheduled times using Linux systemd timers to
 
 Tested on the Epson EcoTank ET-2850; it should also work with the ET-3850, ET-4850, and similar models.
 
-### How to change print frequency
-The `setup_print_test_page.sh` script sets up a Linux service that prints an Epson nozzle check test page on Monday and Friday at noon. I've found this schedule to be sufficient. To increase the print frequency, edit the `print_test_page.timer` file and replace:
-```
-OnCalendar=Mon,Fri 12:00
-Persistent=true
-```
-use this to print every other day at noon:
-```
-OnCalendar=*-*-01/2 12:00
-Persistent=true
-```
-After making your changes, re-run the setup script with the --force flag to overwrite the existing systemd timer.
-
-Note: I run this service in a Linux container on a home server that runs 24/7. If your computer is powered off for extended periods, your inkjet printer may still clog because scheduled prints are skipped during downtime.
-
 ### Installation
 
 Run the setup script with root privileges, specifying your printer's IP address:
@@ -32,12 +17,22 @@ Print a test page immediately through the service:
 sudo systemctl start print_test_page.service
 ```
 
-### Check the timer status
+### How to change print frequency
+The `setup_print_test_page.sh` script sets up a Linux service that prints an Epson nozzle check test page on Monday and Friday at noon. I've found this schedule to be sufficient. To increase the print frequency, edit the `print_test_page.timer` file and replace:
 ```
-systemctl status print_test_page.timer
+OnCalendar=Mon,Fri 12:00
+Persistent=true
 ```
+with this to print every other day at noon:
+```
+OnCalendar=*-*-01/2 12:00
+Persistent=true
+```
+After making your changes, re-run the setup script with the --force flag to overwrite the existing systemd timer.
 
-See the next scheduled run time:
+Note: I run this service in a Linux container on a home server that runs 24/7. If your computer is powered off for extended periods, your inkjet printer may still clog because scheduled prints are skipped during downtime.
+
+### See the last and the next scheduled print time:
 ```
 systemctl list-timers print_test_page.timer
 ```
