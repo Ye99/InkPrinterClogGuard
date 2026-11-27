@@ -45,7 +45,7 @@ If the machine runs on UTC (common in containers) and you want prints at local n
 sudo ./setup_print_test_page.sh --printer-ip 10.0.1.16 --timezone America/Los_Angeles
 ```
 
-Setup appends the zone to the timer's schedule, for example `OnCalendar=Mon,Fri 12:00 America/Los_Angeles`.
+Setup appends the zone to the timer's schedule, for example `OnCalendar=Mon,Fri 12:00 America/Los_Angeles`. Pass `--timezone` again whenever you re-run setup with `--force`, or the schedule goes back to the machine's time zone.
 
 ## Scheduling
 
@@ -114,6 +114,12 @@ sudo ./setup_print_test_page.sh --printer-ip 10.0.1.16 --force
 ```
 
 Older versions wrote the printer IP into `self_contained_print_test_page.sh`. If `git pull` refuses because that file has local changes, discard them first with `git checkout -- self_contained_print_test_page.sh`.
+
+Every `--force` run rebuilds the timer from the clone, so pass `--timezone` again each time if you installed with it. Without it, the schedule falls back to the machine's time zone. For an install that uses `--timezone`, the whole upgrade is:
+
+```
+git checkout -- self_contained_print_test_page.sh && git pull && sudo ./setup_print_test_page.sh --printer-ip 10.0.1.16 --timezone America/Los_Angeles --force
+```
 
 ## Changing the printer's IP address
 
