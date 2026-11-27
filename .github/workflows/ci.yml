@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      # Error-level only for now: the scripts have a few existing warnings
+      # (SC2166, SC2206, SC2155). Raise to warning once those are fixed.
+      - name: ShellCheck
+        run: shellcheck --severity=error *.sh
+
+      - name: Tests (normal user)
+        run: python -m pytest
+
+      # The install/uninstall tests write to /etc/systemd/system, so they only
+      # run as root, on this throwaway runner. systemctl, apt, curl and
+      # timedatectl are stubbed, so nothing is really enabled or installed.
+      - name: Tests (install/uninstall, as root)
+        run: sudo env "PATH=$PATH" INKGUARD_ROOT_TESTS=1 python -m pytest -m root
