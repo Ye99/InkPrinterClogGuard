@@ -1,7 +1,7 @@
 """Shared fixtures for exercising the Bash scripts without real hardware.
 
-Every external command the scripts call (ipptool, systemctl, apt, curl,
-timedatectl, sudo) is replaced by a small stub on PATH. Each stub appends its
+Every external command the scripts call (ipptool, systemctl, apt-get) and a
+few they must not call (apt, curl, timedatectl, sudo) is replaced by a small stub on PATH. Each stub appends its
 argv to a log file so tests can assert exactly what would have run.
 """
 
@@ -39,12 +39,6 @@ cp "${@: -1}" "$FAKE_CAPTURE_DIR/ipp-test-file"
 exit "${FAKE_IPPTOOL_RC:-0}"
 """
 
-# curl stub prints $FAKE_CURL_OUTPUT (the "detected" timezone).
-_CURL_STUB = """#!/bin/bash
-echo "curl $*" >> "$FAKE_CMD_LOG"
-printf '%s' "${FAKE_CURL_OUTPUT:-}"
-"""
-
 # sudo stub just runs the command, so run_as_root works when not root.
 _SUDO_STUB = """#!/bin/bash
 echo "sudo $*" >> "$FAKE_CMD_LOG"
@@ -55,8 +49,8 @@ exec "$@"
 class FakeSystem:
     """A working directory plus a PATH full of logging stubs."""
 
-    def __init__(self, tmp_path: Path):
-        self.workdir = tmp_path / "work"
+    def __init__(self, tmp_path: Path, workdir_name: str = "work"):
+        self.workdir = tmp_path / workdir_name
         self.bin = tmp_path / "bin"
         self.capture = tmp_path / "capture"
         self.log = tmp_path / "commands.log"
@@ -75,9 +69,8 @@ class FakeSystem:
         path.chmod(0o755)
 
     def stub_defaults(self, *, ipptool: bool = True) -> None:
-        for name in ("systemctl", "apt", "timedatectl"):
+        for name in ("systemctl", "apt-get", "apt", "timedatectl", "curl"):
             self.stub(name)
-        self.stub("curl", _CURL_STUB)
         self.stub("sudo", _SUDO_STUB)
         if ipptool:
             self.stub("ipptool", _IPPTOOL_STUB)
@@ -85,7 +78,7 @@ class FakeSystem:
     def commands(self) -> list[str]:
         return [line for line in self.log.read_text().splitlines() if line]
 
-    def run(self, script: str, *args: str, **env) -> subprocess.CompletedProcess:
+    def run(self, script: str, *args: str, cwd: Path | None = None, **env) -> subprocess.CompletedProcess:
         full_env = {
             "PATH": f"{self.bin}:/usr/local/bin:/usr/bin:/bin",
             "HOME": os.environ.get("HOME", "/tmp"),
@@ -96,7 +89,7 @@ class FakeSystem:
         }
         return subprocess.run(
             [BASH, str(self.workdir / script), *args],
-            cwd=self.workdir,
+            cwd=cwd or self.workdir,
             env=full_env,
             capture_output=True,
             text=True,
