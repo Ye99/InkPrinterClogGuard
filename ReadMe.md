@@ -11,6 +11,21 @@ Run the setup script with root privileges, specifying your printer's IP address:
    sudo ./setup_print_test_page.sh --printer-ip 10.0.1.16
    ```
 
+The schedule runs in the system time zone. Setup never changes the system time zone. If the system is on UTC (common in containers) and you want prints at local noon, add `--timezone` with a tz database name, and it applies only to this timer:
+   ```
+   sudo ./setup_print_test_page.sh --printer-ip 10.0.1.16 --timezone America/Los_Angeles
+   ```
+
+Setup stores the printer address in the installed systemd service, so it doesn't edit any file in your clone and `git pull` stays clean.
+
+### Upgrading from an earlier version
+Earlier versions wrote the printer IP into `self_contained_print_test_page.sh`. After pulling this version, discard that local edit and re-run setup once:
+   ```
+   git checkout -- self_contained_print_test_page.sh
+   git pull
+   sudo ./setup_print_test_page.sh --printer-ip 10.0.1.16 --force
+   ```
+
 ### Test your installation to verify it works as expected
 Print a test page immediately through the service:
 ```
@@ -31,6 +46,11 @@ Persistent=true
 After making your changes, re-run the setup script with the --force flag to overwrite the existing systemd timer.
 
 Note: I run this service in a Linux container on a home server that runs 24/7. If your computer is powered off for extended periods, your inkjet printer may still clog because scheduled prints are skipped during downtime.
+
+### Print a test page by hand, without the service
+```
+./self_contained_print_test_page.sh --printer-ip 10.0.1.16
+```
 
 ### See the last and the next scheduled print time:
 ```

@@ -1,7 +1,13 @@
-  [Unit]
-  Description=Print Test Page Service
+[Unit]
+Description=Print an Epson nozzle-check page to keep the print head from drying out
+Wants=network-online.target
+After=network-online.target
 
-  [Service]
-  # the path will be updated by setup script. Don't worry if it doesn't match your git clone local path. 
-  ExecStart=/root/p/configs/self_contained_print_test_page.sh
-
+[Service]
+Type=oneshot
+# setup_print_test_page.sh replaces ExecStart with this clone's path and adds
+# Environment=PRINTERIP=<your printer> when it installs the unit, so this
+# placeholder path doesn't need to match your clone.
+ExecStart=/bin/bash /path/to/self_contained_print_test_page.sh
+# Don't let a hung print job keep the unit running forever.
+TimeoutStartSec=5min

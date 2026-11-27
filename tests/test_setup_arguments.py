@@ -39,7 +39,8 @@ def test_printer_ip_option_needs_a_value(isolated, args):
     assert "required after -p" in result.stdout
 
 
-@pytest.mark.parametrize("ip", ["256.1.1.1", "10.0.1", "10.0.1.16.5", "printer.local", "10.0.1.x", ""])
+@pytest.mark.parametrize("ip", ["256.1.1.1", "10.0.1", "10.0.1.16.5", "printer.local", "10.0.1.x", "",
+                                "010.0.1.1", "10.0.1.08", "10.0.1.00", "1000.0.0.1", " 10.0.1.16"])
 def test_rejects_invalid_ip(isolated, ip):
     result = isolated.run(SETUP_SCRIPT, "--printer-ip", ip)
     assert result.returncode == 1
@@ -47,7 +48,8 @@ def test_rejects_invalid_ip(isolated, ip):
         assert "Invalid IP address format" in result.stdout
 
 
-@pytest.mark.parametrize("ip", ["10.0.1.16", "192.168.1.255", "0.0.0.0", "255.255.255.255"])
+@pytest.mark.parametrize("ip", ["10.0.1.16", "192.168.1.255", "0.0.0.0", "255.255.255.255", "10.0.1.8",
+                                "199.249.100.9"])
 def test_accepts_valid_ip_and_moves_on_to_systemd_check(isolated, ip):
     result = isolated.run(SETUP_SCRIPT, "-p", ip)
     assert "Invalid IP" not in result.stdout
@@ -55,10 +57,39 @@ def test_accepts_valid_ip_and_moves_on_to_systemd_check(isolated, ip):
     assert result.returncode == 1
 
 
-def test_rejects_unknown_option(isolated):
+def test_leading_zero_error_explains_the_format(isolated):
+    result = isolated.run(SETUP_SCRIPT, "-p", "10.0.1.08")
+    assert result.returncode == 1
+    assert "without leading zeros" in result.stdout
+    assert "value too great for base" not in result.stderr
+
+
+def test_rejects_unknown_option_and_shows_usage(isolated):
     result = isolated.run(SETUP_SCRIPT, "--bogus")
     assert result.returncode == 1
     assert "Unknown option: --bogus" in result.stdout
+    assert "Usage:" in result.stdout
+
+
+@pytest.mark.parametrize("zone", ["America/Los_Angeles", "UTC", "Asia/Taipei"])
+def test_accepts_known_timezone(isolated, zone):
+    result = isolated.run(SETUP_SCRIPT, "-p", "10.0.1.16", "--timezone", zone)
+    assert "Unknown time zone" not in result.stdout
+    assert "systemd is not available" in result.stdout
+
+
+@pytest.mark.parametrize("zone", ["Mars/Olympus_Mons", "../../etc/passwd", "America/Los Angeles", "/etc/hosts"])
+def test_rejects_unknown_timezone(isolated, zone):
+    result = isolated.run(SETUP_SCRIPT, "-p", "10.0.1.16", "-t", zone)
+    assert result.returncode == 1
+    assert "Unknown time zone" in result.stdout
+
+
+@pytest.mark.parametrize("args", [["-t"], ["--timezone"], ["--timezone", "--force"]])
+def test_timezone_option_needs_a_value(isolated, args):
+    result = isolated.run(SETUP_SCRIPT, "-p", "10.0.1.16", *args)
+    assert result.returncode == 1
+    assert "time zone is required" in result.stdout
 
 
 def test_uninstall_does_not_need_printer_ip(isolated):

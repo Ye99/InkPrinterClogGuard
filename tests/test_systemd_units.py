@@ -35,3 +35,15 @@ def test_timer_schedule_is_a_valid_calendar_expression():
     expr = _load("print_test_page.timer")["Timer"]["OnCalendar"]
     result = subprocess.run(["systemd-analyze", "calendar", expr], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_service_is_a_oneshot_job_that_waits_for_the_network():
+    service = _load("print_test_page.service")
+    assert service["Service"]["Type"] == "oneshot"
+    assert "network-online.target" in service["Unit"]["After"]
+    assert "network-online.target" in service["Unit"]["Wants"]
+
+
+def test_service_has_a_start_timeout():
+    # Type=oneshot has no start timeout by default, so a hung job would never end.
+    assert _load("print_test_page.service")["Service"]["TimeoutStartSec"]
